@@ -28,7 +28,7 @@ jobs:
       matrix: 
         branch: ['droidspaces']
       fail-fast: false
-    timeout-minutes: 45
+    timeout-minutes: 120
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_MAXSIZE: 20G
@@ -56,7 +56,9 @@ jobs:
 
     - name: Install Dependencies & toolchain
       run: |
-        sudo apt update
+        # 换用官方源，azure 镜像偶尔抽风会导致 apt 卡死
+        sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+        sudo apt update -o Acquire::Retries=2 -o Acquire::http::Timeout=30
         sudo apt install -y \
           build-essential \
           clang-13 \
