@@ -118,9 +118,9 @@ jobs:
         path: ${{ env.CCACHE_DIR }}
         key: kernel-ccache-${{ runner.os }}-${{ env.ARCH }}-${{ matrix.branch }}
     
-    - name: Submodule init (only for ksunext and ksunext-susfs)
+    - name: Submodule init (for ksunext, ksunext-susfs and droidspaces)
       run: |
-        if [ ${{ matrix.branch }} == ksunext ] || [ ${{ matrix.branch }} == ksunext-susfs ]; then
+        if [ ${{ matrix.branch }} == ksunext ] || [ ${{ matrix.branch }} == ksunext-susfs ] || [ ${{ matrix.branch }} == droidspaces ]; then
           git submodule update --init
         fi
     
