@@ -1,3 +1,45 @@
+# 本 fork 说明（HandyWote/kernel_xiaomi_mt6853）
+
+在原仓库基础上，本 fork **只做了一处改动**：在 `arch/arm64/configs/cannon_defconfig`
+里打开容器（dockerd）所需的 9 个内核选项，其余代码与配置保持上游原样。
+
+```
+CONFIG_SYSVIPC=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_IPC_NS=y
+CONFIG_CGROUP_DEVICE=y
+CONFIG_CGROUP_PIDS=y
+CONFIG_TMPFS_XATTR=y
+CONFIG_TMPFS_POSIX_ACL=y
+CONFIG_BINFMT_MISC=y
+CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y
+```
+
+## 已实机验证的适配环境
+
+| 项 | 值 |
+|---|---|
+| 机型 | Redmi Note 9 5G（cannon / M2007J22C / MT6853T） |
+| 系统 | MIUI 14 `V14.0.6.0.SJECNXM`（Android 12，原厂 vendor 分区未动） |
+| 刷入方式 | 解包 boot 镜像替换内核段后 `fastboot flash boot`（保留原 ramdisk，可叠加 Magisk） |
+| 内核版本串 | `4.14.336-perf-v0.1-docker`（编译时由 CI 写入 `.scmversion` 决定） |
+
+启动后实测正常：WiFi（自动连上校园网并取到 IP，可访问外网）、移动网络接口、蓝牙、
+音频（`mt6853-mt6359` 声卡 / AudioFlinger 输出线程）、传感器、GPS、相机。
+
+## 两点需要知道的行为
+
+1. **vendor 分区里的原厂 `.ko` 不会加载**：原厂模块 vermagic 是 `4.14.186-perf-00243-g9a0d96109bda`，
+   与 4.14.336 对不上，`lsmod` 为空。这棵树的 WiFi 等驱动是内建（built-in）的，因此不影响使用；
+   若要使用原厂模块，需要另外做版本串伪装 + 模块校验放行。
+2. **开机后可能出现“您的设备内部出现了问题”弹窗**：改过 boot 分区、启动校验状态变化所致，
+   点掉即可，不影响功能。
+
+## 构建
+
+直接用上游自带的 `.github/workflows/autobuild.yml`（Actions → Auto Kernel Builer → Run workflow），
+三条支线都会各出一个 AnyKernel3 卡刷包；`main` 支线的产物即为本 fork 的容器支持版。
+
 # 使用教程
 ## 1. 自行 git 本项目编译
 ### 1. 选择你需要的支线
