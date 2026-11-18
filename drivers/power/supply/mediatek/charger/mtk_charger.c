@@ -2902,6 +2902,47 @@ static ssize_t store_chg2_current(struct device *dev,
 }
 static DEVICE_ATTR(chg2_current, 0644, show_chg2_current, store_chg2_current);
 
+/*
+ * input_suspend: stop/resume charging (mirrors stock cannon behavior:
+ * disable/enable charger power path + charging logic).
+ * Write 1 to stop charging, 0 to resume.
+ */
+static ssize_t show_input_suspend(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+
+	if (pinfo == NULL || pinfo->chg1_consumer == NULL)
+		return sprintf(buf, "0\n");
+
+	return sprintf(buf, "%d\n", pinfo->enable_pp[MAIN_CHARGER] ? 0 : 1);
+}
+
+static ssize_t store_input_suspend(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+	unsigned long val = 0;
+	int suspend;
+
+	if (buf == NULL || size == 0 || pinfo == NULL ||
+	    pinfo->chg1_consumer == NULL)
+		return size;
+
+	if (kstrtoul(buf, 10, &val) < 0)
+		return size;
+
+	suspend = (val != 0);
+	chr_err("%s: input_suspend = %d\n", __func__, suspend);
+	charger_manager_enable_power_path(pinfo->chg1_consumer,
+		MAIN_CHARGER, !suspend);
+	charger_manager_enable_charging(pinfo->chg1_consumer,
+		MAIN_CHARGER, !suspend);
+	return size;
+}
+static DEVICE_ATTR(input_suspend, 0664, show_input_suspend,
+	store_input_suspend);
+
 static ssize_t show_BatNotify(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -3175,6 +3216,10 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 		goto _out;
 
 	ret = device_create_file(&(pdev->dev), &dev_attr_chg2_current);
+	if (ret)
+		goto _out;
+
+	ret = device_create_file(&(pdev->dev), &dev_attr_input_suspend);
 	if (ret)
 		goto _out;
 
